@@ -3,7 +3,7 @@ import crypto from "crypto";
 import BitField from "./util/bitfield";
 import { EventEmitter } from "events";
 import * as BufferUtils from "./util/bufferutils";
-import type { Info } from "./torrentdata/Metadata";
+import type { Info } from "./torrentdata/types";
 
 const LOGGER = require("log4js").getLogger("metadata.js");
 
@@ -14,7 +14,7 @@ class Metadata extends EventEmitter {
   public bitfield: BitField | null;
   private _encodedMetadata: Buffer<ArrayBuffer> | null;
   private _length: number;
-  private _metadata: Info | undefined;
+  public _metadata: Info | undefined;
 
   constructor(infoHash: Buffer<ArrayBuffer>, metadata?: Info) {
     super();
@@ -49,8 +49,7 @@ class Metadata extends EventEmitter {
   setMetadata(_metadata: Info | undefined) {
     if (!_metadata) return;
 
-    const metadata = this;
-    metadata._metadata = _metadata;
+    this._metadata = _metadata;
 
     if (this._metadata!.files && this._encodedMetadata) {
       LOGGER.debug(this._encodedMetadata.length);

@@ -1,6 +1,6 @@
 import base32 from "base32";
 import { parse } from "url";
-import type { Metadata } from "./Metadata";
+import type { Metadata } from "./types";
 
 const LOGGER = require("log4js").getLogger("metadata/magnet.js");
 
@@ -8,12 +8,9 @@ const LOGGER = require("log4js").getLogger("metadata/magnet.js");
  * Retrieve torrent metadata from magnet URL.
  */
 const MagnetMetadata = {
-  load: function (
-    url: string,
-    callback: (error: any, metadata?: Metadata) => void
-  ) {
+  async load(url: string) {
     if (!url.match(/^magnet:/)) {
-      callback(new Error("Given URL is not a magnet URL."));
+      throw new Error("Given URL is not a magnet URL.");
     }
 
     LOGGER.debug("Reading magnet metadata from " + url);
@@ -35,7 +32,7 @@ const MagnetMetadata = {
     }
 
     if (!hash) {
-      callback(new Error("No supported xt URN provided."));
+      throw new Error("No supported xt URN provided.");
     } else {
       let infoHash;
       if (hash.length === 40) {
@@ -56,13 +53,13 @@ const MagnetMetadata = {
         }
       }
 
-      callback(null, {
+      return {
         infoHash: infoHash,
         info: {
           name: parsedUrl.query.dn as string,
         },
         "announce-list": trackers ?? [],
-      });
+      } as Metadata;
     }
   },
 };

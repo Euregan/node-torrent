@@ -14,7 +14,6 @@ import type File from "../file";
 import * as BufferUtils from "../util/bufferutils";
 import type Metadata from "../metadata";
 import type MetadataExtension from "../extension/metadata";
-import type { Info } from "../torrentdata/Metadata";
 
 const LOGGER = require("log4js").getLogger("torrent.js");
 
@@ -82,19 +81,19 @@ class Torrent extends EventEmitter {
 
     const torrent = this;
     // load torrent data
-    TorrentData.load(dataUrl, (error, metadata, trackers) => {
-      if (error) {
-        LOGGER.warn("Error loading torrent data. error = %j", error);
-        torrent.setStatus(TorrentStatus.ERROR, error);
-      } else {
+    TorrentData.load(dataUrl)
+      .then(([metadata, trackers]) => {
         LOGGER.debug("Torrent data loaded.");
-        torrent._metadata = metadata!;
+        torrent._metadata = metadata;
         trackers!.forEach((tracker) => {
           torrent.addTracker(tracker);
         });
         torrent.initialise();
-      }
-    });
+      })
+      .catch((error) => {
+        LOGGER.warn("Error loading torrent data. error = %j", error);
+        torrent.setStatus(TorrentStatus.ERROR, error);
+      });
   }
 
   start() {

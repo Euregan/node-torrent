@@ -1,7 +1,6 @@
 import type Torrent from "../torrent/torrent";
 import { parse, type UrlWithStringQuery } from "url";
 import protocol from "./protocol";
-import type Peer from "../peer";
 
 const EventEmitter = require("events").EventEmitter;
 
@@ -130,7 +129,7 @@ class Tracker extends EventEmitter {
 }
 
 export const createTrackers = (
-  announce: string,
+  announce: string | undefined,
   announceList?: Array<string>
 ) => {
   const trackers = [];
@@ -139,7 +138,7 @@ export const createTrackers = (
       trackers.push(new Tracker([announce]));
     });
   } else {
-    trackers.push(new Tracker([announce]));
+    trackers.push(new Tracker([announce!]));
   }
   return trackers;
 };

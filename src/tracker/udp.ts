@@ -1,5 +1,5 @@
 import dgram, { Socket, type RemoteInfo } from "dgram";
-import BufferUtils from "../util/bufferutils";
+import * as BufferUtils from "../util/bufferutils";
 import type Tracker from "./tracker";
 import type { Callback, Data, TrackerInfo } from "./types";
 

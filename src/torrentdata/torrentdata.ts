@@ -1,6 +1,6 @@
 import { parse } from "url";
 import Metadata from "../metadata";
-import Tracker, { createTrackers } from "../tracker/tracker";
+import { createTrackers } from "../tracker/tracker";
 
 import http from "./http";
 import file from "./file";
@@ -14,37 +14,23 @@ const loaders = {
 };
 
 const TorrentData = {
-  load: (
-    url: string,
-    callback: (
-      error: any,
-      metadata?: Metadata,
-      trackers?: Array<Tracker>
-    ) => void
-  ) => {
+  async load(url: string) {
     const parsedUrl = parse(url);
     const protocol = parsedUrl.protocol || "file:";
+
     const loader =
       protocol in loaders ? loaders[protocol as keyof typeof loaders] : null;
 
     if (!loader) {
-      callback(new Error("No metadata parser for given URL, URL = " + url));
-    } else {
-      loader.load(url, (error, torrentData) => {
-        if (error) {
-          callback(error);
-        } else {
-          callback(
-            null,
-            new Metadata(torrentData!.infoHash, torrentData!.info),
-            createTrackers(
-              torrentData!["announce"]!,
-              torrentData!["announce-list"]
-            )
-          );
-        }
-      });
+      throw new Error("No metadata parser for given URL, URL = " + url);
     }
+
+    const torrentData = await loader.load(url);
+
+    return [
+      new Metadata(torrentData!.infoHash, torrentData!.info),
+      createTrackers(torrentData.announce, torrentData["announce-list"]),
+    ] as const;
   },
 };
 
