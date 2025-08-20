@@ -1,10 +1,20 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import HttpMetadata from "./http";
+import { resolve } from "path";
 
 test("Can parse metadata over http", async () => {
+  spyOn(global, "fetch").mockResolvedValueOnce({
+    arrayBuffer: async () =>
+      Bun.file(resolve(__dirname, "./tears-of-steel.torrent")).arrayBuffer(),
+    status: 200,
+    // @ts-expect-error
+    headers: { get: () => "" },
+  });
+
   const metadata = await HttpMetadata.load(
     "https://webtorrent.io/torrents/tears-of-steel.torrent"
   );
+
   expect(metadata).toMatchObject({
     announce: "udp://tracker.leechers-paradise.org:6969",
     "announce-list": [

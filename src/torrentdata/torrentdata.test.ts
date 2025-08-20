@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { resolve } from "node:path";
 import TorrentData from "./torrentdata";
 
@@ -91,6 +91,14 @@ describe("Can parse any torrent metadata", () => {
   });
 
   test("Can parse metadata over http", async () => {
+    spyOn(global, "fetch").mockResolvedValueOnce({
+      arrayBuffer: async () =>
+        Bun.file(resolve(__dirname, "./tears-of-steel.torrent")).arrayBuffer(),
+      status: 200,
+      // @ts-expect-error
+      headers: { get: () => "" },
+    });
+
     const [metadata, trackers] = await TorrentData.load(
       "https://webtorrent.io/torrents/tears-of-steel.torrent"
     );
