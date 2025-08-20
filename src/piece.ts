@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import * as crypto from "crypto";
 import * as ProcessUtils from "./util/processutils";
 import BitField from "./util/bitfield";
 import { EventEmitter } from "events";

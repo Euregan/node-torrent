@@ -1,5 +1,5 @@
 import * as bencode from "./util/bencode";
-import crypto from "crypto";
+import * as crypto from "crypto";
 import BitField from "./util/bitfield";
 import { EventEmitter } from "events";
 import * as BufferUtils from "./util/bufferutils";

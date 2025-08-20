@@ -65,7 +65,6 @@ class Decoder {
         ) {
           const key = this._decode();
           if (typeof key !== "string") throw "Keys in dict must be strings";
-          // @ts-expect-error
           ret[key] = this._decode();
         }
 
@@ -147,12 +146,7 @@ export const encode = (encodable: Encodable) => {
     case Object: {
       let ret = "d";
       for (const k in encodable as Record<string, Encodable>) {
-        ret +=
-          encode(k) +
-          encode(
-            // @ts-expect-error
-            encodable[k]
-          );
+        ret += encode(k) + encode(encodable[k]);
       }
       ret += "e";
 

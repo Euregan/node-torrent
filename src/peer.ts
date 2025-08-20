@@ -1,5 +1,5 @@
 import type Torrent from "./torrent/torrent";
-import net, { Socket } from "net";
+import { createConnection, Socket } from "net";
 import * as bencode from "./util/bencode";
 import * as ProcessUtils from "./util/processutils";
 import BitField from "./util/bitfield";
@@ -128,7 +128,7 @@ class Peer extends EventEmitter {
       LOGGER.debug(
         "Connecting to peer at " + this.address + " on " + this.port
       );
-      this.stream = net.createConnection(this.port!, this.address);
+      this.stream = createConnection(this.port!, this.address);
       this.stream.on("connect", () => {
         onConnect(this);
       });

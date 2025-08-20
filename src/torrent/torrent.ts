@@ -277,7 +277,6 @@ class Torrent extends EventEmitter {
               // @ts-expect-error
               this._metadata.pieces,
               _files!,
-              // @ts-expect-error
               this._metadata["piece length"],
               _size!,
               (error, _pieces) => {

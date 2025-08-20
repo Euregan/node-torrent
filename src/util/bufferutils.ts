@@ -1,4 +1,4 @@
-export const concat = (...buffers: Array<Buffer<ArrayBuffer>>) => {
+export const concat = (...buffers: Array<Buffer<ArrayBufferLike>>) => {
   var length = 0;
   for (var i = 0; i < buffers.length; i++) {
     length += buffers[i]!.length;
@@ -13,7 +13,10 @@ export const concat = (...buffers: Array<Buffer<ArrayBuffer>>) => {
   return nb;
 };
 
-export const equal = (b1: Buffer<ArrayBuffer>, b2: Buffer<ArrayBuffer>) => {
+export const equal = (
+  b1: Buffer<ArrayBufferLike>,
+  b2: Buffer<ArrayBufferLike>
+) => {
   if (b1.length != b2.length) {
     return false;
   }
@@ -34,7 +37,7 @@ export const fromInt = (int: number) => {
   return b;
 };
 
-export const readInt = (buffer: Buffer<ArrayBuffer>, offset?: number) => {
+export const readInt = (buffer: Buffer<ArrayBufferLike>, offset?: number) => {
   offset = offset || 0;
   return (
     (buffer[offset]! << 24) |
@@ -51,13 +54,13 @@ export const fromInt16 = (int: number) => {
   return b;
 };
 
-export const readInt16 = (buffer: Buffer<ArrayBuffer>, offset: number) => {
+export const readInt16 = (buffer: Buffer<ArrayBufferLike>, offset: number) => {
   offset = offset || 0;
   return (buffer[offset + 2]! << 8) | buffer[offset + 3]!;
 };
 
 export const slice = (
-  buffer: Buffer<ArrayBuffer>,
+  buffer: Buffer<ArrayBufferLike>,
   start: number,
   end?: number
 ) => {

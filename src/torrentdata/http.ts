@@ -1,10 +1,10 @@
-import zlib from "zlib";
-import util from "util";
+import * as zlib from "zlib";
+import { promisify } from "util";
 import * as bencode from "../util/bencode";
 import type { Metadata } from "./types";
 
-const deflate = util.promisify(zlib.deflate);
-const gunzip = util.promisify(zlib.gunzip);
+const deflate = promisify(zlib.deflate);
+const gunzip = promisify(zlib.gunzip);
 
 const LOGGER = require("log4js").getLogger("metadata/http.js");
 

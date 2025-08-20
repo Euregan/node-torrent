@@ -1,5 +1,5 @@
-import log4js from "log4js";
-import net, { Server, Socket } from "net";
+import * as log4js from "log4js";
+import { createServer, Server, Socket } from "net";
 import dht from "./dht";
 import Peer, { PeerEvent } from "./peer";
 import Torrent, { TorrentStatus } from "./torrent/torrent";
@@ -46,7 +46,7 @@ class Client {
 
     this.torrents = {};
     this.downloadPath = options.downloadPath || ".";
-    this.server = net.createServer(this.handleConnection.bind(this));
+    this.server = createServer(this.handleConnection.bind(this));
     this.port = listen(this.server, options.portRange);
 
     this.extensions = [require("./extension/metadata")];
@@ -79,9 +79,9 @@ class Client {
   }
 
   removeTorrent(torrent: Torrent) {
-    if (this.torrents[torrent.infoHash!]) {
-      this.torrents[torrent.infoHash!]!.stop();
-      delete this.torrents[torrent.infoHash!];
+    if (this.torrents[torrent.infoHash!.toString()]) {
+      this.torrents[torrent.infoHash!.toString()]!.stop();
+      delete this.torrents[torrent.infoHash!.toString()];
     }
   }
 

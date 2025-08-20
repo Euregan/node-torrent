@@ -1,10 +1,10 @@
 export type Data = {
-  info_hash: string;
+  info_hash: Buffer<ArrayBufferLike>;
   peer_id: Buffer<ArrayBuffer>;
   port: number;
   uploaded?: number;
   downloaded?: number;
-  left?: string;
+  left?: number;
 };
 
 export type TrackerInfo = {

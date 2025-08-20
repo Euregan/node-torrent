@@ -1,6 +1,6 @@
 import File from "../file";
-import fs from "fs";
-import path from "path";
+import * as fs from "fs";
+import { join } from "path";
 import * as ProcessUtils from "../util/processutils";
 
 /**
@@ -11,7 +11,7 @@ const createFiles = (
   metadata: { name: string; length: number; files: Array<File> },
   callback: (error: any | null, files?: Array<File>, length?: number) => void
 ) => {
-  const basePath = path.join(downloadPath, metadata.name);
+  const basePath = join(downloadPath, metadata.name);
 
   if (metadata.length) {
     const file = new File(basePath, metadata.length, null, (error) => {
@@ -54,7 +54,7 @@ const nextFile = (
       } else {
         processedFiles.push(
           new File(
-            path.join(filePath!, pathArray[0]!),
+            join(filePath!, pathArray[0]!),
             file.length,
             offset,
             (error) => {
@@ -82,7 +82,7 @@ const checkPath = (
   if (pathArray.length === 1) {
     callback(null, basePath);
   } else {
-    const currentPath = path.join(basePath, pathArray.shift()!);
+    const currentPath = join(basePath, pathArray.shift()!);
     makeDirectory(currentPath, (error) => {
       if (error) {
         callback(error);

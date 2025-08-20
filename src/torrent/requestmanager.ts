@@ -44,7 +44,7 @@ class RequestManager {
     const activePieces = this._activePieces!;
 
     Object.keys(peer.pieces).forEach((key) => {
-      activePieces.unset(peer.pieces[key as keyof typeof peer.pieces]);
+      activePieces.unset(peer.pieces[key]);
     });
     peer.pieces = {};
     peer.removeListener(PeerEvent.DISCONNECT, this.peerDisconnectEventHandler!);
@@ -116,7 +116,7 @@ class RequestManager {
     LOGGER.debug("_torrentReady");
     this._bitfield = torrent.bitfield;
     this._activePieces = new BitField(this._bitfield!.length);
-    this._pieces = torrent._pieces;
+    this._pieces = torrent._pieces!;
 
     const requestManager = this;
     this._pieces.forEach((piece) => {

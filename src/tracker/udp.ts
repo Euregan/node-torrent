@@ -1,4 +1,4 @@
-import dgram, { Socket, type RemoteInfo } from "dgram";
+import { createSocket, Socket, type RemoteInfo } from "dgram";
 import * as BufferUtils from "../util/bufferutils";
 import type Tracker from "./tracker";
 import type { Callback, Data, TrackerInfo } from "./types";
@@ -39,13 +39,11 @@ class UDP {
     this.event = event;
     this.callback = callback;
 
-    this.socket = dgram
-      .createSocket("udp4", (msg, rinfo) => {
-        this._handleMessage(msg, rinfo);
-      })
-      .on("error", (error) => {
-        this._complete(null, new Error(error.message));
-      });
+    this.socket = createSocket("udp4", (msg, rinfo) => {
+      this._handleMessage(msg, rinfo);
+    }).on("error", (error) => {
+      this._complete(null, new Error(error.message));
+    });
     this._connect();
   }
 
@@ -58,9 +56,9 @@ class UDP {
     );
     this._generateTransactionId();
     const packet = BufferUtils.concat(
-      this.connectionId,
+      this.connectionId!,
       BufferUtils.fromInt(Action.ANNOUNCE),
-      this.transactionId,
+      this.transactionId!,
       this.data!["info_hash"],
       this.data!["peer_id"],
       BufferUtils.fromInt(0),
@@ -69,7 +67,8 @@ class UDP {
       BufferUtils.fromInt(this.data!["left"] || 0), // 64
       BufferUtils.fromInt(0),
       BufferUtils.fromInt(this.data!["uploaded"] || 0), //64
-      BufferUtils.fromInt(this.event),
+      // @ts-expect-error
+      BufferUtils.fromInt(this.event!),
       BufferUtils.fromInt(0),
       BufferUtils.fromInt(Math.random() * 255),
       BufferUtils.fromInt(200),
@@ -115,7 +114,7 @@ class UDP {
     const packet = BufferUtils.concat(
       CONNECTION_ID,
       BufferUtils.fromInt(Action.CONNECT),
-      this.transactionId
+      this.transactionId!
     );
     this._send(packet);
   }
@@ -135,7 +134,7 @@ class UDP {
     const action = BufferUtils.readInt(msg);
     const responseTransactionId = BufferUtils.slice(msg, 4, 8);
 
-    if (BufferUtils.equal(responseTransactionId, this.transactionId)) {
+    if (BufferUtils.equal(responseTransactionId, this.transactionId!)) {
       console.log(remoteInfo);
       this.resolvedIp = remoteInfo.address;
       LOGGER.debug("transactionIds equals, action = " + action);
