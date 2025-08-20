@@ -43,8 +43,8 @@ class UDP {
       .createSocket("udp4", (msg, rinfo) => {
         this._handleMessage(msg, rinfo);
       })
-      .on("error", (e) => {
-        this._complete(null, new Error(e.message));
+      .on("error", (error) => {
+        this._complete(null, new Error(error.message));
       });
     this._connect();
   }
@@ -134,8 +134,9 @@ class UDP {
     LOGGER.debug("handling message from tracker");
     const action = BufferUtils.readInt(msg);
     const responseTransactionId = BufferUtils.slice(msg, 4, 8);
-    console.log(responseTransactionId, this.transactionId);
+
     if (BufferUtils.equal(responseTransactionId, this.transactionId)) {
+      console.log(remoteInfo);
       this.resolvedIp = remoteInfo.address;
       LOGGER.debug("transactionIds equals, action = " + action);
       switch (action) {

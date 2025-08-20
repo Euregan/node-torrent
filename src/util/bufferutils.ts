@@ -34,7 +34,7 @@ export const fromInt = (int: number) => {
   return b;
 };
 
-export const readInt = (buffer: Buffer<ArrayBuffer>, offset: number) => {
+export const readInt = (buffer: Buffer<ArrayBuffer>, offset?: number) => {
   offset = offset || 0;
   return (
     (buffer[offset]! << 24) |
