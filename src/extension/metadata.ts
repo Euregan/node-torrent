@@ -5,6 +5,7 @@ import Peer, { PeerEvent } from "../peer";
 import Torrent, { TorrentStatus } from "../torrent/torrent";
 
 const LOGGER = require("log4js").getLogger("extension/metadata.js");
+LOGGER.level = "debug";
 
 const EXTENSION_KEY = "ut_metadata";
 

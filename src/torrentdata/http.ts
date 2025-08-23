@@ -7,6 +7,7 @@ const deflate = promisify(zlib.deflate);
 const gunzip = promisify(zlib.gunzip);
 
 const LOGGER = require("log4js").getLogger("metadata/http.js");
+LOGGER.level = "debug";
 
 /**
  * Retrieve torrent metadata over http/https.

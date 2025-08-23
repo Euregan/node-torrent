@@ -1,12 +1,5 @@
-import dht from "dht.js";
-import { EventEmitter } from "events";
+import BittorrentDHT from "bittorrent-dht";
 import type Peer from "./peer";
-
-type DhtNode = {
-  port: number;
-  connect: (node: { address: string; port: number }) => void;
-  advertise: (hash: Buffer<ArrayBuffer>) => void;
-} & EventEmitter;
 
 type Callback = (
   error?: any | null,
@@ -15,37 +8,27 @@ type Callback = (
 ) => void;
 
 const LOGGER = require("log4js").getLogger("dht.js");
+LOGGER.level = "debug";
 
 const bootstrapNodes = [
   { address: "router.bittorrent.com", port: 6881 },
   { address: "router.utorrent.com", port: 6881 },
 ];
 
-let node: DhtNode | null = null;
 const hashes: Record<string, Callback> = {};
+
+let dht: any;
 
 const DHT = {
   init(callback?: Callback) {
-    node = dht.node.create() as unknown as DhtNode;
+    dht = new BittorrentDHT();
 
-    node.on("peer:new", handleNewPeer);
+    dht.on("peer", (peer: { port: number; host: string }, infohash: string) =>
+      handleNewPeer(infohash, peer)
+    );
 
-    node.on("error", function (error) {
-      LOGGER.error("Error recieved from DHT node. error = " + error);
-      console.log(error);
-    });
-
-    node.once("listening", function () {
-      LOGGER.debug("Initialised DHT node on port %j", node!.port);
-      bootstrapNodes.forEach((bootstrapNode) => {
-        LOGGER.debug(
-          "Connecting to node at " +
-            bootstrapNode.address +
-            ":" +
-            bootstrapNode.port
-        );
-        node!.connect(bootstrapNode);
-      });
+    dht.listen(null, () => {
+      LOGGER.debug("Initialised DHT node on port %j", dht!.port);
       if (callback) {
         callback();
       }
@@ -54,26 +37,22 @@ const DHT = {
 
   advertise(infohash: Buffer<ArrayBuffer>, callback: Callback) {
     hashes[infohash.toString()] = callback;
-    node!.advertise(infohash);
+    dht.lookup(infohash);
   },
 };
 
-const handleNewPeer = (infohash: string, peer: Peer, isAdvertised: boolean) => {
+const handleNewPeer = (
+  infohash: string,
+  peer: { port: number; host: string }
+) => {
   LOGGER.debug("Handling peer connection over DHT");
-  if (!isAdvertised) {
-    LOGGER.debug("Incoming peer connection not advertised, ignoring.");
-    return;
-  }
-  if (peer.port! <= 0 || peer.port! >= 65536) {
-    LOGGER.debug(
-      "Invalid peer socket %s:%s, ignoring.",
-      peer.address,
-      peer.port
-    );
+
+  if (peer.port <= 0 || peer.port >= 65536) {
+    LOGGER.debug("Invalid peer socket %s:%s, ignoring.", peer.host, peer.port);
     return;
   }
   if (hashes[infohash]) {
-    hashes[infohash](null, peer.address, peer.port);
+    hashes[infohash](null, peer.host, peer.port);
   }
 };
 

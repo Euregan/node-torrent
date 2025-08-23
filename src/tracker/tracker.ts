@@ -5,6 +5,7 @@ import protocol from "./protocol";
 const EventEmitter = require("events").EventEmitter;
 
 const LOGGER = require("log4js").getLogger("tracker.js");
+LOGGER.level = "debug";
 
 const CONNECTING = "connecting";
 const ERROR = "error";
@@ -25,7 +26,6 @@ class Tracker extends EventEmitter {
 
   constructor(urls: [string, ...string[]]) {
     super();
-    EventEmitter.call(this);
 
     this._urls = urls;
     // TODO: need to step through URLs as part of announce process
@@ -50,7 +50,7 @@ class Tracker extends EventEmitter {
   }
 
   private _announce(event: "started" | "stopped" | null) {
-    LOGGER.debug("Announce" + (event ? " " + event : ""));
+    LOGGER.debug("Announce" + (event ? " " + event : "") + " " + this.url.href);
 
     const handlerClass = protocol[this.url.protocol! as keyof typeof protocol];
 

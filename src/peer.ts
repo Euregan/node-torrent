@@ -20,6 +20,7 @@ const KEEPALIVE_PERIOD = 120000;
 const MAX_REQUESTS = 10;
 
 const LOGGER = require("log4js").getLogger("peer.js");
+LOGGER.level = "debug";
 
 class Peer extends EventEmitter {
   public choked;
@@ -64,9 +65,14 @@ class Peer extends EventEmitter {
   public torrent: Torrent | null = null;
 
   constructor(stream: Socket);
-  constructor(peerId: string, address: string, port: number, torrent: Torrent);
   constructor(
-    streamOrPeerId: Socket | string,
+    peerId: string | null,
+    address: string,
+    port: number,
+    torrent: Torrent
+  );
+  constructor(
+    streamOrPeerId: Socket | string | null,
     address?: string,
     port?: number,
     torrent?: Torrent
@@ -103,7 +109,7 @@ class Peer extends EventEmitter {
 
     this.debugStatus = "";
 
-    if (typeof streamOrPeerId === "object") {
+    if (typeof streamOrPeerId === "object" && streamOrPeerId !== null) {
       this.debugStatus += "incoming:";
       this.stream = streamOrPeerId;
       this.address = this.stream.remoteAddress;

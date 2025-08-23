@@ -6,6 +6,7 @@ import * as BufferUtils from "./util/bufferutils";
 import type { Info } from "./torrentdata/types";
 
 const LOGGER = require("log4js").getLogger("metadata.js");
+LOGGER.level = "debug";
 
 const BLOCK_SIZE = 16384;
 
@@ -71,7 +72,7 @@ class Metadata extends EventEmitter {
         .update(bencode.encode(_metadata), "ascii")
         .digest();
       this.infoHash = Buffer.alloc(Buffer.byteLength(digest), digest, "binary");
-      LOGGER.debug("Metadata complete.");
+      LOGGER.debug("Metadata complete.", this.isComplete());
       this.emit(MetadataStatus.COMPLETE);
     } else if (this.isComplete()) {
       const digest = crypto
@@ -89,7 +90,7 @@ class Metadata extends EventEmitter {
         this.emit(MetadataStatus.INVALID);
         throw "BOOM"; // TODO: why does re-encoding the metadata cos this to fail?
       } else {
-        LOGGER.debug("Metadata complete.");
+        LOGGER.debug("Metadata complete.", this.isComplete());
         this.emit(MetadataStatus.COMPLETE);
       }
     }

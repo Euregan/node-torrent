@@ -9,6 +9,7 @@ const CONNECTION_ID = BufferUtils.concat(
 );
 
 const LOGGER = require("log4js").getLogger("udp.js");
+LOGGER.level = "debug";
 
 // Actions
 const Action = {

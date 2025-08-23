@@ -5,6 +5,7 @@ import { EventEmitter } from "events";
 import File, { FileMatch } from "./file";
 
 const LOGGER = require("log4js").getLogger("piece.js");
+LOGGER.level = "debug";
 
 const CHUNK_LENGTH = 16384;
 

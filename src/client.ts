@@ -3,9 +3,10 @@ import { createServer, Server, Socket } from "net";
 import dht from "./dht";
 import Peer, { PeerEvent } from "./peer";
 import Torrent, { TorrentStatus } from "./torrent/torrent";
-import type MetadataExtension from "./extension/metadata";
+import MetadataExtension from "./extension/metadata";
 
 const LOGGER = log4js.getLogger("client.js");
+LOGGER.level = "debug";
 
 /**
  * Create a new torrent client.
@@ -22,7 +23,7 @@ class Client {
   public id: Buffer<ArrayBuffer>;
   public downloadPath: string;
 
-  private extensions;
+  private extensions: Array<typeof MetadataExtension>;
   private server;
 
   constructor(options?: {
@@ -46,10 +47,10 @@ class Client {
 
     this.torrents = {};
     this.downloadPath = options.downloadPath || ".";
-    this.server = createServer(this.handleConnection.bind(this));
+    this.server = createServer((socket) => this.handleConnection(socket));
     this.port = listen(this.server, options.portRange);
 
-    this.extensions = [require("./extension/metadata")];
+    this.extensions = [MetadataExtension];
 
     dht.init();
   }
@@ -86,6 +87,7 @@ class Client {
   }
 
   private handleConnection(stream: Socket) {
+    LOGGER.debug("New peer attempting to connect");
     const peer = new Peer(stream);
     peer.once(PeerEvent.CONNECT, (infoHash) => {
       const torrent = this.torrents[infoHash];

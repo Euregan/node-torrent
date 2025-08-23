@@ -16,6 +16,7 @@ import type Metadata from "../metadata";
 import type MetadataExtension from "../extension/metadata";
 
 const LOGGER = require("log4js").getLogger("torrent.js");
+LOGGER.level = "debug";
 
 type TorrentStats = {
   downloaded: number;
@@ -35,13 +36,13 @@ class Torrent extends EventEmitter {
   public bitfield: BitField | null;
   public status: TorrentStatus;
 
-  private _metadata: Metadata | null;
+  private metadata: Metadata | null;
   private _requestManager;
   private _files: Array<File>;
   private _size?: number;
   public _pieces: Array<Piece> | undefined;
   private _downloadPath;
-  private _extensions: Array<typeof MetadataExtension>;
+  private extensions: Array<typeof MetadataExtension>;
   private _extensionMap: Record<string, number> | null;
 
   constructor(
@@ -52,7 +53,6 @@ class Torrent extends EventEmitter {
     extensions: Array<typeof MetadataExtension>
   ) {
     super();
-    EventEmitter.call(this);
 
     this.clientId = clientId;
     this.clientPort = clientPort;
@@ -71,23 +71,25 @@ class Torrent extends EventEmitter {
     this.bitfield = null;
     this.status = TorrentStatus.LOADING;
 
-    this._metadata = null;
+    this.metadata = null;
     this._requestManager = new RequestManager(this);
     this._files = [];
     this._pieces = [];
     this._downloadPath = downloadPath;
-    this._extensions = extensions;
+    this.extensions = extensions;
     this._extensionMap = null;
 
     const torrent = this;
     // load torrent data
+    LOGGER.debug("Loading torrent metadata.");
     TorrentData.load(dataUrl)
       .then(([metadata, trackers]) => {
-        LOGGER.debug("Torrent data loaded.");
-        torrent._metadata = metadata;
-        trackers!.forEach((tracker) => {
+        LOGGER.debug("Torrent metadata loaded.");
+        torrent.metadata = metadata;
+        trackers.forEach((tracker) => {
           torrent.addTracker(tracker);
         });
+
         torrent.initialise();
       })
       .catch((error) => {
@@ -98,7 +100,9 @@ class Torrent extends EventEmitter {
 
   start() {
     LOGGER.debug("Starting torrent.");
-    const callback = this.addPeer.bind(this);
+    const callback = (peerId: string, peerIp: string, peerPort: number) =>
+      this.addPeer(peerId, peerIp, peerPort);
+
     // TODO: treat as tracker
     DHT.advertise(this.infoHash!, callback);
 
@@ -120,12 +124,16 @@ class Torrent extends EventEmitter {
   }
 
   addPeer(peer: Peer): void;
-  addPeer(id: string, address: string, port: number): void;
-  addPeer(peerOrId: Peer | string, address?: string, port?: number): void {
+  addPeer(id: string | null, address: string, port: number): void;
+  addPeer(
+    peerOrId: Peer | string | null,
+    address?: string,
+    port?: number
+  ): void {
     const peer =
-      typeof peerOrId === "string"
-        ? new Peer(peerOrId, address!, port!, this)
-        : peerOrId;
+      typeof peerOrId === "object" && peerOrId !== null
+        ? peerOrId
+        : new Peer(peerOrId, address!, port!, this);
 
     LOGGER.debug("Adding peer, id = " + peer.getIdentifier());
 
@@ -182,7 +190,7 @@ class Torrent extends EventEmitter {
 
         if (extensionKey && this._extensionMap![extensionKey]) {
           (
-            this._extensions[
+            this.extensions[
               this._extensionMap![extensionKey]! - 1
             ] as unknown as MetadataExtension
           ).handleMessage(peer, message);
@@ -220,19 +228,19 @@ class Torrent extends EventEmitter {
   }
 
   hasMetadata() {
-    return this._metadata!.isComplete();
+    return this.metadata!.isComplete();
   }
 
   isComplete() {
     return this.bitfield!.cardinality() === this.bitfield!.length;
   }
 
-  setMetadata(metadata: Metadata) {
-    this._metadata = metadata;
+  async setMetadata(metadata: Metadata) {
+    this.metadata = metadata;
     this.initialise();
   }
 
-  private initialise() {
+  private async initialise() {
     LOGGER.debug("Initialising torrent.");
     if (this.status === TorrentStatus.READY) {
       LOGGER.debug("Already initialised, skipping.");
@@ -241,68 +249,62 @@ class Torrent extends EventEmitter {
 
     if (!this._extensionMap) {
       this._extensionMap = {};
-      for (let i = 0; i < this._extensions.length; i++) {
-        const ExtensionClass = this._extensions[i]!;
+      for (let i = 0; i < this.extensions.length; i++) {
+        const ExtensionClass = this.extensions[i]!;
         const extension = new ExtensionClass(this);
         const extensionCode = i + 1;
 
         // @ts-expect-error
-        this._extensions[i] = extension;
+        this.extensions[i] = extension;
         this._extensionMap[ExtensionClass.EXTENSION_KEY] = extensionCode;
       }
     }
 
     if (!this.infoHash) {
-      this.infoHash = this._metadata!.infoHash;
+      this.infoHash = this.metadata!.infoHash;
       ProcessUtils.nextTick(() => {
         this.emit(TorrentStatus.INFO_HASH, this.infoHash);
       });
     }
 
-    if (this.hasMetadata()) {
-      LOGGER.debug("Metadata is complete, initialising files and pieces.");
-
-      createFiles(
+    LOGGER.debug("Metadata is complete, initialising files and pieces.");
+    try {
+      const [files, size] = await createFiles(
         this._downloadPath,
-        // @ts-expect-error
-        this._metadata,
-        (error, _files, _size) => {
+        this.metadata!._metadata!
+      );
+
+      this._files = files;
+      this._size = size;
+
+      createPieces(
+        this.metadata!._metadata!.pieces!,
+        files,
+        this.metadata!._metadata!["piece length"]!,
+        size,
+        (error, _pieces) => {
           if (error) {
             this.setStatus(TorrentStatus.ERROR, error);
           } else {
-            this._files = _files!;
-            this._size = _size!;
+            this._pieces = _pieces!;
+            this.bitfield = new BitField(_pieces!.length);
+            const completeHandler = this.pieceComplete.bind(this);
 
-            createPieces(
-              // @ts-expect-error
-              this._metadata.pieces,
-              _files!,
-              this._metadata["piece length"],
-              _size!,
-              (error, _pieces) => {
-                if (error) {
-                  this.setStatus(TorrentStatus.ERROR, error);
-                } else {
-                  this._pieces = _pieces!;
-                  this.bitfield = new BitField(_pieces!.length);
-                  const completeHandler = this.pieceComplete.bind(this);
-
-                  _pieces!.forEach((piece) => {
-                    if (piece.isComplete()) {
-                      this.bitfield!.set(piece.index);
-                    } else {
-                      piece.once(PieceState.COMPLETE, completeHandler);
-                    }
-                  });
-                  ProcessUtils.nextTick(() => {
-                    this.setStatus(TorrentStatus.READY);
-                  });
-                }
+            _pieces!.forEach((piece) => {
+              if (piece.isComplete()) {
+                this.bitfield!.set(piece.index);
+              } else {
+                piece.once(PieceState.COMPLETE, completeHandler);
               }
-            );
+            });
+            ProcessUtils.nextTick(() => {
+              this.setStatus(TorrentStatus.READY);
+            });
           }
         }
       );
+    } catch (error) {
+      this.setStatus(TorrentStatus.ERROR, error);
     }
   }
 
